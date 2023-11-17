@@ -60,23 +60,28 @@ export default function App() {
 
   async function beautifyByContent() {
     const fields = await currentTable?.getFieldMetaList();
-    console.log(fields);
-    const records = await currentTable?.getRecords({ pageSize: 10 });
-    console.log(records);
+    const records = await currentTable?.getRecords({ pageSize: 30 });
     for (let field of fields!) {
       let fieldWidth = 20;
       for (let record of records?.records!) {
         fieldWidth = Math.max(fieldWidth, await getFieldContentWidth(field, record));
       }
-      await (currentView as IGridView).setFieldWidth(field.id, fieldWidth);
+      await setFieldWidth(field.id, fieldWidth);
     }
   }
 
   async function beautifyByHeader() {
     const fields = await currentTable?.getFieldMetaList();
     for (let field of fields!) {
-      await (currentView as IGridView).setFieldWidth(field.id, await getFieldHeaderWidth(field));
+      const targetWidth = await getFieldHeaderWidth(field);
+      await setFieldWidth(field.id, targetWidth);
     }
+  }
+
+  async function setFieldWidth(fieldId: string, width: number) {
+    // 兼容11.2版本bug，11.3发布后去掉
+    await (currentView as IGridView).setFieldWidth(fieldId, width.toString());
+    await (currentView as IGridView).setFieldWidth(fieldId, width);
   }
 
   async function getFieldContentWidth(field: IFieldMeta, record: IRecord) {
