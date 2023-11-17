@@ -106,11 +106,15 @@ export default function App() {
           }
           break;
         case FieldType.SingleSelect:
-          width = Math.max(width, getTextWidth((record.fields[field.id] as IOpenSingleSelect).text) + 40);
+          if (record.fields[field.id]) {
+            width = Math.max(width, getTextWidth((record.fields[field.id] as IOpenSingleSelect).text) + 40);
+          }
           break;
         case FieldType.MultiSelect:
-          for (let segment of record.fields[field.id] as IOpenMultiSelect) {
-            if (segment) { width += 20 + getTextWidth(segment.text); }
+          if (record.fields[field.id]) {
+            for (let segment of record.fields[field.id] as IOpenMultiSelect) {
+              if (segment) { width += 20 + getTextWidth(segment.text); }
+            }
           }
           break;
         case FieldType.User:
