@@ -80,6 +80,7 @@ export default function App() {
 
   async function setFieldWidth(fieldId: string, width: number) {
     // 兼容11.2版本bug，11.3发布后去掉
+    //@ts-ignore
     await (currentView as IGridView).setFieldWidth(fieldId, width.toString());
     await (currentView as IGridView).setFieldWidth(fieldId, width);
   }
