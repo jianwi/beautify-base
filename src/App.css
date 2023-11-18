@@ -59,4 +59,5 @@ html {
 .button {
   font-weight: regular;
   border-radius: 5px;
+  width: 240px;
 }
