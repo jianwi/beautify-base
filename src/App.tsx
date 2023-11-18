@@ -107,9 +107,9 @@ export default function App() {
             <Button onClick={() => beautify("header")} theme="solid" className="button" loading={loading}>
               {t('button.beautifyByHeader')}
             </Button>
-            <Button onClick={() => syncToAllViews()} theme="solid" className="button" loading={loading}>
+            {/* <Button onClick={() => syncToAllViews()} theme="solid" className="button" loading={loading}>
               {t('button.syncToAllViews')}
-            </Button>
+            </Button> */}
           </Space>
         ) : (
           <Text type="secondary">请选择一个表格视图</Text>
