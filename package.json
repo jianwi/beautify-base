@@ -21,12 +21,14 @@
     "vite": "^3.0.4"
   },
   "dependencies": {
+    "@douyinfe/semi-icons": "^2.47.0",
     "@douyinfe/semi-ui": "^2.45.2",
     "@lark-base-open/js-sdk": "https://lf9-static.bytednsdoc.com/obj/eden-cn/jjjpceh7nulojvhj/@lark-base-open-js-sdk-0.3.6-alpha.5.tgz",
     "i18next": "^23.5.1",
     "i18next-browser-languagedetector": "^7.1.0",
     "moment": "^2.29.4",
     "normalize.css": "^8.0.1",
+    "react-async-hook": "^4.0.0",
     "react-i18next": "^13.2.2"
   }
 }
