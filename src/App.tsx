@@ -105,9 +105,7 @@ function ModifyView({currentView, currentTable}) {
     const [fieldTypes, setFieldTypes] = useState([])
 
     useEffect(() => {
-        return () => {
-            getFields()
-        }
+        return () => getFields()
     }, [])
 
 
@@ -126,7 +124,6 @@ function ModifyView({currentView, currentTable}) {
             }
             return f
         })
-        console.log(fields)
         setFieldTypes(types)
         setFields(fields)
         setFilterFields(fields)
@@ -187,7 +184,7 @@ function ModifyView({currentView, currentTable}) {
                     })
                     console.log("查找新的", newFields)
                     setFilterFields(newFields)
-                }} style={{width: "400px", marginBottom: "3px"}} optionList={fieldTypes}
+                }} style={{maxWidth: "400px", marginBottom: "3px"}} optionList={fieldTypes}
                 insetLabel={t('filterByType')}></Select>
         </div>
         <Input
@@ -210,7 +207,7 @@ function ModifyView({currentView, currentTable}) {
             marginBottom: "6px",
             height: "3px",
             background: "#eee",
-            width: "400px",
+            maxWidth: "400px",
         }}></div>
 
         <CheckboxGroup value={selectedFields}
@@ -226,7 +223,7 @@ function ModifyView({currentView, currentTable}) {
                     return <Flex.Row style={{
                         justifyContent: "space-between",
                         alignItems: "center",
-                        width: "400px",
+                        maxWidth: "400px",
                         margin: "3px 0",
                         padding: "6px 10px",
                         borderRadius: "4px",

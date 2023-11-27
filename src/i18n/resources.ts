@@ -41,6 +41,7 @@ const resources = {
     "tab.modify": "字段管理",
     "tab.beauty": "一键美化视图",
     "text.currentView": "当前视图",
+    "field.type.0": "未知类型",
     "field.type.1": "文本",
     "field.type.2": "数字",
     "field.type.3": "单选",
@@ -67,6 +68,9 @@ const resources = {
     "field.type.99002": "进度",
     "field.type.99003": "货币",
     "field.type.99004": "评分",
+    "toast.deleteSuccess": "删除成功",
+    "toast.deleteFail": "删除失败"
+
   },
   en: {
     // Define your English text
@@ -78,6 +82,7 @@ const resources = {
     "tab.modify": "Field Management",
     "tab.beauty": "Beautify View",
     "text.currentView": "Current View",
+    "field.type.0": "unknown",
     "field.type.1": "Text",
     "field.type.2": "Number",
     "field.type.3": "Single Select",
@@ -104,6 +109,8 @@ const resources = {
     "field.type.99002": "Progress",
     "field.type.99003": "Currency",
     "field.type.99004": "Rating",
+    "toast.deleteSuccess": "success",
+    "toast.deleteFail": "fail"
   },
 };
 
