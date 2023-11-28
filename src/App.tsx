@@ -105,8 +105,8 @@ function ModifyView({currentView, currentTable}) {
     const [fieldTypes, setFieldTypes] = useState([])
 
     useEffect(() => {
-        return () => getFields()
-    }, [])
+        getFields()
+    }, [currentView])
 
 
     async function getFields() {
