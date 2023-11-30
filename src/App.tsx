@@ -220,7 +220,9 @@ function ModifyView({currentView, currentTable}) {
 
             {
                 filterFields.map(f => {
-                    return <Flex.Row style={{
+                    return <Flex.Row
+                        key={f.id}
+                        style={{
                         justifyContent: "space-between",
                         alignItems: "center",
                         maxWidth: "400px",
@@ -330,35 +332,33 @@ export default function App() {
     const [viewName, setViewName] = useState<string>("");
 
 
-    function getSelection() {
-        setLoading(true)
-        bitable.base.getSelection().then((selection) => {
-            bitable.base.getTableById(selection.tableId!).then((table) => {
-                table.getViewById(selection.viewId!).then((view) => {
-                    setCurrentView(view);
-                    setCurrentTable(table);
-                    view.getType().then((type) => {
-                        setCurrentViewType(type);
-                    });
-                    view.getName().then((name) => {
-                        setViewName(name)
-                    })
-                });
-            });
-        }).finally(() => setLoading(false));
-    }
 
     useEffect(() => {
-        return () => {
-            getSelection();
 
-            bitable.base.onSelectionChange((event) => {
-                let data = event.data
-                if (data.tableId && data.viewId) {
-                    getSelection()
-                }
-            });
+        function getSelection() {
+            setLoading(true)
+            bitable.base.getSelection().then((selection) => {
+                bitable.base.getTableById(selection.tableId!).then((table) => {
+                    table.getViewById(selection.viewId!).then((view) => {
+                        setCurrentView(view);
+                        setCurrentTable(table);
+                        view.getType().then((type) => {
+                            setCurrentViewType(type);
+                        });
+                        view.getName().then((name) => {
+                            setViewName(name)
+                        })
+                    });
+                });
+            }).finally(() => setLoading(false));
         }
+        getSelection();
+        bitable.base.onSelectionChange((event) => {
+            let data = event.data
+            if (data.tableId && data.viewId) {
+                getSelection()
+            }
+        });
     }, []);
 
     if (loading) {
