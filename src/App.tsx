@@ -1,45 +1,34 @@
 import "./App.css";
 import {useEffect, useState} from "react";
-import {Spin, Input, Button, Space, Tabs, TabPane, Checkbox, CheckboxGroup, Toast, Select} from "@douyinfe/semi-ui";
+import {
+    Spin,
+    Divider,
+    Input,
+    Card,
+    Row,
+    Col,
+    Button,
+    Space,
+    Checkbox,
+    CheckboxGroup,
+    Toast,
+    Select,
+    Modal
+} from "@douyinfe/semi-ui";
 import {Typography} from '@douyinfe/semi-ui';
 import {useTranslation} from "react-i18next";
 import {IGridView, ITable, IView, ViewType, bitable} from "@lark-base-open/js-sdk";
-import {IconDelete, IconEyeOpened, IconEyeClosed} from "@douyinfe/semi-icons"
+import {
+    IconDelete,
+    IconEyeOpened,
+    IconEyeClosed,
+    IconEdit,
+    IconSearch,
+    IconFile,
+    IconFilter
+} from "@douyinfe/semi-icons"
 import {getFieldContentWidth, getFieldHeaderWidth} from "./utils/widthCalculator";
 
-function Flex(props) {
-    return <div style={{
-        display: "flex",
-        width: "100%",
-        maxWidth: "500px",
-        ...props.style
-    }}>
-        {props.children}
-    </div>
-}
-
-Flex.Row = function (props) {
-    return <div style={{
-        display: "flex",
-        flexDirection: "row",
-        width: "100%",
-        maxWidth: "500px",
-        ...props.style
-    }}>
-        {props.children}
-    </div>
-}
-Flex.Col = function (props) {
-    return <div style={{
-        display: "flex",
-        flexDirection: "column",
-        width: "100%",
-        maxWidth: "500px",
-        ...props.style
-    }}>
-        {props.children}
-    </div>
-}
 
 function BeautyView({currentView, currentTable}) {
     const [loading, setLoading] = useState<boolean>(false);
@@ -97,12 +86,59 @@ function BeautyView({currentView, currentTable}) {
     )
 }
 
+function EditField({showEditFieldModal,setShowEditFieldModal,editFieldInfo ,editField}) {
+    const [newName, setNewName] = useState(editFieldInfo.name)
+    const {t} = useTranslation();
+
+    useEffect(()=>{
+        setNewName(editFieldInfo.name)
+    },[editFieldInfo])
+
+    return <>
+        <Modal
+            width={300}
+            title={t('modal.editFieldTitle')}
+            visible={showEditFieldModal}
+            onOk={() => {
+                editField(editFieldInfo.id, newName)
+            }}
+            onCancel={() => {
+                setShowEditFieldModal(false)
+            }}
+        >
+            <Input
+                value={newName}
+                onChange={(e) => {
+                    setNewName(e)
+                }}
+            />
+        </Modal>
+    </>
+
+
+}
+
 function ModifyView({currentView, currentTable}) {
     const {t} = useTranslation();
     const [fields, setFields] = useState([])
     const [filterFields, setFilterFields] = useState([])
     const [selectedFields, setSelectedFields] = useState([])
     const [fieldTypes, setFieldTypes] = useState([])
+    const [viewName, setViewName] = useState("")
+
+    // 编辑字段名称
+    const [showEditFieldModal, setShowEditFieldModal] = useState(false)
+    const [editFieldInfo, setEditFiledInfo] = useState({})
+
+    async function editField(fieldId,newName) {
+        console.log("编辑字段名称", newName, fieldId)
+        await currentTable.setField(fieldId, {
+            name: newName
+        })
+        Toast.success(t('toast.editSuccess'))
+        setShowEditFieldModal(false)
+        getFields()
+    }
 
     useEffect(() => {
         getFields()
@@ -110,9 +146,8 @@ function ModifyView({currentView, currentTable}) {
 
 
     async function getFields() {
-        let view = currentView
-        let fields = await view.getFieldMetaList()
-        let visible = await view.getVisibleFieldIdList()
+        let fields = await currentView.getFieldMetaList()
+        let visible = await currentView.getVisibleFieldIdList()
         let types = []
         fields = fields.map(f => {
             f.visable = visible.indexOf(f.id) > -1
@@ -127,7 +162,8 @@ function ModifyView({currentView, currentTable}) {
         setFieldTypes(types)
         setFields(fields)
         setFilterFields(fields)
-
+        let viewName = await currentView.getName()
+        setViewName(viewName)
     }
 
     async function showField(id: string) {
@@ -170,9 +206,11 @@ function ModifyView({currentView, currentTable}) {
 
 
     return <>
-        <div>
+        <EditField showEditFieldModal={showEditFieldModal} setShowEditFieldModal={setShowEditFieldModal} editFieldInfo={editFieldInfo} editField={editField}/>
+        <Card title={viewName}>
             <Select
                 multiple
+                prefix={<IconFilter/>}
                 onChange={(types: string[]) => {
                     console.log(types)
                     if (!types || types.length === 0) {
@@ -182,141 +220,150 @@ function ModifyView({currentView, currentTable}) {
                     let newFields = fields.filter(f => {
                         return types.indexOf(f.type) > -1
                     })
-                    console.log("查找新的", newFields)
                     setFilterFields(newFields)
                 }} style={{maxWidth: "400px", marginBottom: "3px"}} optionList={fieldTypes}
-                insetLabel={t('filterByType')}></Select>
-        </div>
-        <Input
-            style={{
-                maxWidth: "400px",
-            }}
-            insetLabel={t('filterByName')} onChange={(value) => {
-            if (!value) {
-                setFilterFields(fields)
-                return
-            }
-            let newFields = fields.filter(f => {
-                return f.name.indexOf(value) > -1
-            })
-            console.log("查找新的", value, newFields)
-            setFilterFields(newFields)
-        }}></Input>
-        <div style={{
-            marginTop: "6px",
-            marginBottom: "6px",
-            height: "3px",
-            background: "#eee",
-            maxWidth: "400px",
-        }}></div>
+                ></Select>
 
-        <CheckboxGroup value={selectedFields}
-                       style={{
-                           rowGap: "0px",
-                       }}
-                       onChange={(v) => {
-                           setSelectedFields(v)
-                       }}>
+            <Input
+                style={{
+                    maxWidth: "400px",
+                }}
+                prefix={<IconSearch/>}
+                onChange={(value) => {
+                    if (!value) {
+                        setFilterFields(fields)
+                        return
+                    }
+                    let newFields = fields.filter(f => {
+                        return f.name.indexOf(value) > -1
+                    })
+                    setFilterFields(newFields)
+                }}></Input>
 
-            {
-                filterFields.map(f => {
-                    return <Flex.Row
-                        key={f.id}
-                        style={{
-                        justifyContent: "space-between",
-                        alignItems: "center",
-                        maxWidth: "400px",
-                        margin: "3px 0",
-                        padding: "6px 10px",
-                        borderRadius: "4px",
-                        boxSizing: "border-box",
-                        background: "#f5f5f5",
-                    }}>
-                        <Checkbox style={{flex: 1,}} key={f.id} value={f.id}>
+
+
+            <CheckboxGroup value={selectedFields}
+                           style={{
+                               rowGap: "0px",
+                           }}
+                           onChange={(v) => {
+                               setSelectedFields(v)
+                           }}>
+
+                <Divider margin={10}/>
+
+                {
+                    filterFields.map(f => {
+                        return <Row style={{
+                            background: "#f5f5f5",
+                            padding: "6px 10px",
+                            display: "flex",
+                            alignItems: "center",
+                            margin: "3px 0",
+                            borderRadius: "4px",
+                            maxWidth: "400px",
+                        }}>
+                            <Col span={16}>
+                                <Checkbox style={{flex: 1,}} key={f.id} value={f.id}>
                                 <span style={{
                                     color: f.visable ? "black" : "gray"
                                 }}>{f.name}</span>
-                        </Checkbox>
-                        <Flex.Row
-                            style={{
-                                width: "fit-content",
+                                </Checkbox>
+                            </Col>
+                            <Col span={8} style={{
+                                textAlign: "right"
                             }}>
-                            <Button
-                                style={{
-                                    marginRight: "10px"
-                                }}
-                                icon={<IconDelete/>}
-                                onClick={() => {
-                                    currentTable.deleteField(f.id).then(() => {
-                                        Toast.success(t('toast.deleteSuccess'))
-                                        getFields()
-                                    }).catch(() => {
-                                        Toast.error(t('toast.deleteFail'))
-                                    })
+                                <Space>
+                                    {
+                                        f.visable ?
+                                            <Button onClick={() => {
+                                                hideField(f.id)
+                                            }} icon={<IconEyeOpened/>}
+                                            /> :
+                                            <Button onClick={() => {
+                                                showField(f.id)
+                                            }} icon={
+                                                <IconEyeClosed/>
+                                            }/>
+                                    }
+                                    <Button
+                                        icon={<IconEdit/>}
+                                        onClick={() => {
+                                            console.log("编辑字段名称", f)
+                                            setEditFiledInfo({
+                                                id: f.id,
+                                                name: f.name
+                                            })
+                                            setShowEditFieldModal(true)
+                                        }}
+                                    >
+                                    </Button>
+                                    <Button
+                                        icon={<IconDelete/>}
+                                        onClick={() => {
+                                            currentTable.deleteField(f.id).then(() => {
+                                                Toast.success(t('toast.deleteSuccess'))
+                                                getFields()
+                                            }).catch(() => {
+                                                Toast.error(t('toast.deleteFail'))
+                                            })
 
-                                }} type={'danger'}/>
-                            {
-                                f.visable ?
-                                    <Button onClick={() => {
-                                        hideField(f.id)
-                                    }} icon={<IconEyeOpened/>}
-                                    /> :
-                                    <Button onClick={() => {
-                                        showField(f.id)
-                                    }} icon={
-                                        <IconEyeClosed/>
-                                    }/>
-                            }
-                        </Flex.Row>
-                    </Flex.Row>
-                })
-            }
-        </CheckboxGroup>
-        <Flex.Row
-            style={{
-                alignItems: "center",
-                width: "400px",
-                margin: "3px 0",
-                padding: "6px 10px",
-                borderRadius: "4px",
-                boxSizing: "border-box",
-                background: "#f5f5f5",
+                                        }} type={'danger'}/>
 
-            }}
-        >
+                                </Space>
 
-            <Checkbox onChange={(e) => {
-                if (e.target.checked) {
-                    setSelectedFields(filterFields.map(f => f.id))
-                } else {
-                    setSelectedFields([])
+                            </Col>
+                        </Row>
+                    })
                 }
-            }} checked={selectedFields.length === filterFields.length}/>
-            <Button
+            </CheckboxGroup>
+            <div
                 style={{
-                    margin: "0 10px",
+                    display: "flex",
+                    alignItems: "center",
+                    width: "400px",
+                    margin: "3px 0",
+                    padding: "6px 10px",
+                    borderRadius: "4px",
+                    boxSizing: "border-box",
+                    background: "#f5f5f5",
+
                 }}
-                onClick={() => {
+            >
+
+                <Checkbox onChange={(e) => {
+                    if (e.target.checked) {
+                        setSelectedFields(filterFields.map(f => f.id))
+                    } else {
+                        setSelectedFields([])
+                    }
+                }} checked={selectedFields.length === filterFields.length}/>
+                <Button
+                    style={{
+                        margin: "0 10px",
+                    }}
+                    onClick={() => {
+                        let ids = selectedFields
+                        if (ids.length === 0) {
+                            return
+                        }
+                        ids.forEach(id => {
+                            hideField(id)
+                        })
+
+                    }}>批量隐藏</Button>
+                <Button onClick={() => {
                     let ids = selectedFields
                     if (ids.length === 0) {
                         return
                     }
                     ids.forEach(id => {
-                        hideField(id)
+                        showField(id)
                     })
 
-            }}>批量隐藏</Button>
-            <Button onClick={() => {
-                let ids = selectedFields
-                if (ids.length === 0) {
-                    return
-                }
-                ids.forEach(id => {
-                    showField(id)
-                })
-
-            }}>批量显示</Button>
-        </Flex.Row>
+                }}>批量显示</Button>
+            </div>
+        </Card>
     </>
 
 }
@@ -329,29 +376,41 @@ export default function App() {
     const [currentViewType, setCurrentViewType] = useState<ViewType | null>(null);
     const [currentTable, setCurrentTable] = useState<ITable | null>(null);
     const {Text} = Typography;
-    const [viewName, setViewName] = useState<string>("");
-
 
 
     useEffect(() => {
-
-        function getSelection() {
+        async function getSelection() {
             setLoading(true)
-            bitable.base.getSelection().then((selection) => {
-                bitable.base.getTableById(selection.tableId!).then((table) => {
-                    table.getViewById(selection.viewId!).then((view) => {
-                        setCurrentView(view);
-                        setCurrentTable(table);
-                        view.getType().then((type) => {
-                            setCurrentViewType(type);
-                        });
-                        view.getName().then((name) => {
-                            setViewName(name)
-                        })
-                    });
-                });
-            }).finally(() => setLoading(false));
+            let startTimeStep1 = performance.now();
+            let selection = await bitable.base.getSelection()
+            let endTimeStep1 = performance.now();
+            let {tableId, viewId} = selection
+
+            let startTimeStep2 = performance.now();
+            let table = await bitable.base.getTableById(tableId!)
+            let endTimeStep2 = performance.now();
+
+            let startTimeStep3 = performance.now();
+            let view = await table.getViewById(viewId!)
+            let endTimeStep3 = performance.now();
+            setCurrentView(view)
+            setCurrentTable(table)
+
+            let startTimeStep4 = performance.now();
+            let viewType = await view.getType()
+            let endTimeStep4 = performance.now();
+            setCurrentViewType(viewType)
+
+
+            console.log("耗时统计")
+            console.log("getSelection", endTimeStep1 - startTimeStep1)
+            console.log("getTableById", endTimeStep2 - startTimeStep2)
+            console.log("getViewById", endTimeStep3 - startTimeStep3)
+            console.log("getViewType", endTimeStep4 - startTimeStep4)
+            console.log("总耗时", endTimeStep4 - startTimeStep1)
+            setLoading(false)
         }
+
         getSelection();
         bitable.base.onSelectionChange((event) => {
             let data = event.data
@@ -372,27 +431,11 @@ export default function App() {
     }
 
     if (currentViewType && currentViewType === ViewType.Grid) {
-        return (
-            <div style={{
-                padding: "0 20px"
-            }}>
-                <Text type="secondary">{t('text.currentView')}: {viewName}</Text>
-                <Tabs type="line" defaultActiveKey={'1'}>
-                    <TabPane tab={t('tab.modify')} itemKey="1">
-                        <ModifyView currentView={currentView} currentTable={currentTable}/>
-                    </TabPane>
-                    <TabPane tab={t('tab.beauty')} itemKey="2">
-                        <BeautyView currentView={currentView} currentTable={currentTable}/>
-                    </TabPane>
-
-                </Tabs>
-            </div>
-
-        );
+        return <ModifyView currentView={currentView} currentTable={currentTable} />
     } else {
         return (
             <main className="container">
-                (<Text type="secondary">请选择一个表格视图</Text>)
+                <Text type="secondary">{t("tip.ViewTypeMustBeGrid")}</Text>
             </main>
         );
     }
