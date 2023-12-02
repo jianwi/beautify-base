@@ -70,6 +70,10 @@ const config = [
     ["toast.deleteFail", "删除失败", "fail"],
     ["modal.editFieldTitle", "编辑字段", "Edit Field"],
     ["toast.editSuccess", "编辑成功", "success"],
+    ["modal.batchShowFieldTitle", "以下字段将被显示", "The following fields will be shown"],
+    ["modal.batchHideFieldTitle", "以下字段将被隐藏", "The following fields will be hidden"],
+    ['modal.batchDeleteFieldTitle', "以下字段将被删除", "The following fields will be deleted"],
+    ["toast.deleteFieldError", "删除失败", "fail"],
 ]
 
 

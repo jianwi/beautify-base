@@ -13,7 +13,7 @@ import {
     CheckboxGroup,
     Toast,
     Select,
-    Modal
+    Modal, ButtonGroup, Tag
 } from "@douyinfe/semi-ui";
 import {Typography} from '@douyinfe/semi-ui';
 import {useTranslation} from "react-i18next";
@@ -25,7 +25,7 @@ import {
     IconEdit,
     IconSearch,
     IconFile,
-    IconFilter
+    IconFilter, IconMarginLeftStroked, IconRefresh
 } from "@douyinfe/semi-icons"
 import {getFieldContentWidth, getFieldHeaderWidth} from "./utils/widthCalculator";
 
@@ -146,6 +146,7 @@ function ModifyView({currentView, currentTable}) {
 
 
     async function getFields() {
+        console.log("getFields")
         let fields = await currentView.getFieldMetaList()
         let visible = await currentView.getVisibleFieldIdList()
         let types = []
@@ -164,6 +165,12 @@ function ModifyView({currentView, currentTable}) {
         setFilterFields(fields)
         let viewName = await currentView.getName()
         setViewName(viewName)
+        if (selectedFields.length > 0){
+            let newSelectedFields = selectedFields.filter(id => {
+                return fields.some(f => f.id === id)
+            })
+            setSelectedFields(newSelectedFields)
+        }
     }
 
     async function showField(id: string) {
@@ -204,10 +211,44 @@ function ModifyView({currentView, currentTable}) {
         }
     }
 
+    async function deleteField(id) {
+        try {
+            if (await currentTable.deleteField(id)) {
+                let newFields = fields.filter(f => {
+                    return f.id !== id
+                })
+                let newFilterFields = filterFields.filter(f => {
+                    return f.id !== id
+                })
+                setFields(newFields)
+                setFilterFields(newFilterFields)
+                if (selectedFields.indexOf(id) > -1) {
+                    let newSelectedFields = selectedFields.filter(f => {
+                        return f !== id
+                    })
+                    setSelectedFields(newSelectedFields)
+                }
+            }else {
+                Toast.error(t('toast.deleteFieldError'))
+            }
+        }catch (e) {
+            Toast.error(t('toast.deleteFieldError'))
+        }
+    }
+
 
     return <>
         <EditField showEditFieldModal={showEditFieldModal} setShowEditFieldModal={setShowEditFieldModal} editFieldInfo={editFieldInfo} editField={editField}/>
-        <Card title={viewName}>
+        <Card title={viewName} bodyStyle={{
+            padding: "10px 12px"
+        }}>
+            <Button style={{
+                position: "absolute",
+                right: "10px",
+                top: "10px"
+            }} onClick={()=>{
+                getFields()
+            }} icon={<IconRefresh />}></Button>
             <Select
                 multiple
                 prefix={<IconFilter/>}
@@ -263,14 +304,14 @@ function ModifyView({currentView, currentTable}) {
                             borderRadius: "4px",
                             maxWidth: "400px",
                         }}>
-                            <Col span={16}>
+                            <Col span={15}>
                                 <Checkbox style={{flex: 1,}} key={f.id} value={f.id}>
                                 <span style={{
                                     color: f.visable ? "black" : "gray"
                                 }}>{f.name}</span>
                                 </Checkbox>
                             </Col>
-                            <Col span={8} style={{
+                            <Col span={9} style={{
                                 textAlign: "right"
                             }}>
                                 <Space>
@@ -301,13 +342,7 @@ function ModifyView({currentView, currentTable}) {
                                     <Button
                                         icon={<IconDelete/>}
                                         onClick={() => {
-                                            currentTable.deleteField(f.id).then(() => {
-                                                Toast.success(t('toast.deleteSuccess'))
-                                                getFields()
-                                            }).catch(() => {
-                                                Toast.error(t('toast.deleteFail'))
-                                            })
-
+                                            deleteField(f.id)
                                         }} type={'danger'}/>
 
                                 </Space>
@@ -338,30 +373,111 @@ function ModifyView({currentView, currentTable}) {
                         setSelectedFields([])
                     }
                 }} checked={selectedFields.length === filterFields.length}/>
-                <Button
-                    style={{
-                        margin: "0 10px",
-                    }}
-                    onClick={() => {
-                        let ids = selectedFields
-                        if (ids.length === 0) {
-                            return
-                        }
-                        ids.forEach(id => {
-                            hideField(id)
-                        })
+                <div>
+                    <ButtonGroup>
+                        <Button
+                            icon={<IconEyeOpened/>}
+                            onClick={() => {
+                                let ids = selectedFields
+                                if (ids.length === 0) {
+                                    return
+                                }
+                                let fieldNames = ids.map(id => {
+                                    return fields.find(f => f.id === id).name
+                                })
 
-                    }}>批量隐藏</Button>
-                <Button onClick={() => {
-                    let ids = selectedFields
-                    if (ids.length === 0) {
-                        return
-                    }
-                    ids.forEach(id => {
-                        showField(id)
-                    })
+                                Modal.info({
+                                    width:300,
+                                    title: t('modal.batchShowFieldTitle'),
+                                    content: <div>
+                                        <Space wrap>{
+                                            fieldNames.map(name=>{
+                                                return <Tag style={{maxWidth:"120px"}}>{name}</Tag>
+                                            })
+                                        }</Space>
+                                    </div>,
+                                    onOk() {
+                                        ids.forEach(id => {
+                                            showField(id)
+                                        })
+                                    },
+                                })
+                            }}>显示</Button>
+                        <Button
+                            icon={<IconEyeClosed/>}
+                            onClick={() => {
+                                let ids = selectedFields
+                                if (ids.length === 0) {
+                                    return
+                                }
 
-                }}>批量显示</Button>
+                                let fieldNames = ids.map(id => {
+                                    return fields.find(f => f.id === id).name
+                                })
+                                Modal.info({
+                                    width:300,
+                                    title: t('modal.batchHideFieldTitle'),
+                                    content: <div>
+                                        <Space wrap>{
+                                            fieldNames.map(name=>{
+                                                return <Tag style={{maxWidth:"120px"}}>{name}</Tag>
+                                            })
+                                        }</Space>
+                                    </div>,
+                                    onOk() {
+                                        ids.forEach(id => {
+                                            hideField(id)
+                                        })
+                                    },
+                                })
+                            }}>隐藏</Button>
+
+                        <Button
+                            icon={<IconDelete/>}
+                            type={'danger'}
+                            onClick={() => {
+                                let ids = selectedFields
+                                if (ids.length === 0) {
+                                    return
+                                }
+                                console.log("ids", ids)
+                                console.log("fields", fields)
+                                let fieldNames = ids.map(id => {
+                                    return fields.find(f => f.id === id).name
+                                })
+                                Modal.confirm({
+                                    width:300,
+                                    title: t('modal.batchDeleteFieldTitle'),
+                                    content: <div>
+                                        <Space wrap>{
+                                            fieldNames.map(name=>{
+                                                return <Tag style={{maxWidth:"120px"}}>{name}</Tag>
+                                            })
+                                        }</Space>
+                                    </div>,
+                                    async onOk() {
+                                        for (let id of ids) {
+                                            await deleteField(id)
+                                        }
+                                        getFields()
+                                    },
+                                })
+
+                        }}>删除</Button>
+                        <Button
+                            icon={<IconMarginLeftStroked />}
+                            onClick={() => {
+                            let ids = selectedFields
+                            if (ids.length === 0) {
+                                return
+                            }
+                            ids.forEach(id => {
+                                showField(id)
+                            })
+                        }}>宽度自适应</Button>
+
+                    </ButtonGroup>
+                </div>
             </div>
         </Card>
     </>
