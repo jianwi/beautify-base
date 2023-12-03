@@ -56,8 +56,14 @@ function BeautyView({currentView, currentTable}) {
         }
     }
 
-    async function beautifyByHeader() {
-        const fields = await currentTable?.getFieldMetaList();
+    async function beautifyByHeader(fieldIds: string[] = []) {
+        let fields = await currentTable?.getFieldMetaList();
+        if (fieldIds.length > 0) {
+            fields = fields?.filter(f => {
+                return fieldIds.indexOf(f.id) > -1
+            })
+        }
+
         for (let field of fields!) {
             const targetWidth = await getFieldHeaderWidth(field);
             await setFieldWidth(field.id, targetWidth);
@@ -79,20 +85,17 @@ function BeautyView({currentView, currentTable}) {
             <Button onClick={() => beautify("header")} theme="solid" className="button" loading={loading}>
                 {t('button.beautifyByHeader')}
             </Button>
-            {/* <Button onClick={() => syncToAllViews()} theme="solid" className="button" loading={loading}>
-              {t('button.syncToAllViews')}
-            </Button> */}
         </Space>
     )
 }
 
-function EditField({showEditFieldModal,setShowEditFieldModal,editFieldInfo ,editField}) {
+function EditField({showEditFieldModal, setShowEditFieldModal, editFieldInfo, editField}) {
     const [newName, setNewName] = useState(editFieldInfo.name)
     const {t} = useTranslation();
 
-    useEffect(()=>{
+    useEffect(() => {
         setNewName(editFieldInfo.name)
-    },[editFieldInfo])
+    }, [editFieldInfo])
 
     return <>
         <Modal
@@ -118,60 +121,9 @@ function EditField({showEditFieldModal,setShowEditFieldModal,editFieldInfo ,edit
 
 }
 
-function ModifyView({currentView, currentTable}) {
+function FieldItem({f, currentTable, currentView, fields, setFields, filterFields, setFilterFields, setSelectedFields, selectedFields, setShowEditFieldModal, setEditFiledInfo}) {
+
     const {t} = useTranslation();
-    const [fields, setFields] = useState([])
-    const [filterFields, setFilterFields] = useState([])
-    const [selectedFields, setSelectedFields] = useState([])
-    const [fieldTypes, setFieldTypes] = useState([])
-    const [viewName, setViewName] = useState("")
-
-    // 编辑字段名称
-    const [showEditFieldModal, setShowEditFieldModal] = useState(false)
-    const [editFieldInfo, setEditFiledInfo] = useState({})
-
-    async function editField(fieldId,newName) {
-        console.log("编辑字段名称", newName, fieldId)
-        await currentTable.setField(fieldId, {
-            name: newName
-        })
-        Toast.success(t('toast.editSuccess'))
-        setShowEditFieldModal(false)
-        getFields()
-    }
-
-    useEffect(() => {
-        getFields()
-    }, [currentView])
-
-
-    async function getFields() {
-        console.log("getFields")
-        let fields = await currentView.getFieldMetaList()
-        let visible = await currentView.getVisibleFieldIdList()
-        let types = []
-        fields = fields.map(f => {
-            f.visable = visible.indexOf(f.id) > -1
-            if (!types.some(t => t.value === f.type)) {
-                types.push({
-                    label: t(`field.type.${f.type}`),
-                    value: f.type
-                })
-            }
-            return f
-        })
-        setFieldTypes(types)
-        setFields(fields)
-        setFilterFields(fields)
-        let viewName = await currentView.getName()
-        setViewName(viewName)
-        if (selectedFields.length > 0){
-            let newSelectedFields = selectedFields.filter(id => {
-                return fields.some(f => f.id === id)
-            })
-            setSelectedFields(newSelectedFields)
-        }
-    }
 
     async function showField(id: string) {
         if (await currentView.showField(id)) {
@@ -228,17 +180,227 @@ function ModifyView({currentView, currentTable}) {
                     })
                     setSelectedFields(newSelectedFields)
                 }
-            }else {
+            } else {
                 Toast.error(t('toast.deleteFieldError'))
             }
-        }catch (e) {
+        } catch (e) {
             Toast.error(t('toast.deleteFieldError'))
         }
     }
 
 
     return <>
-        <EditField showEditFieldModal={showEditFieldModal} setShowEditFieldModal={setShowEditFieldModal} editFieldInfo={editFieldInfo} editField={editField}/>
+        <Row style={{
+            background: "#f5f5f5",
+            padding: "6px 10px",
+            display: "flex",
+            alignItems: "center",
+            margin: "3px 0",
+            borderRadius: "4px",
+            maxWidth: "400px",
+        }}>
+            <Col span={15}>
+                <Checkbox style={{flex: 1,}} key={f.id} value={f.id}>
+                                <span style={{
+                                    color: f.visable ? "black" : "gray"
+                                }}>{f.name}</span>
+                </Checkbox>
+            </Col>
+            <Col span={9} style={{
+                textAlign: "right"
+            }}>
+                <Space>
+                    {
+                        f.visable ?
+                            <Button onClick={() => {
+                                hideField(f.id)
+                            }} icon={<IconEyeOpened/>}
+                            /> :
+                            <Button onClick={() => {
+                                showField(f.id)
+                            }} icon={
+                                <IconEyeClosed/>
+                            }/>
+                    }
+                    <Button
+                        icon={<IconEdit/>}
+                        onClick={() => {
+                            console.log("编辑字段名称", f)
+                            setEditFiledInfo({
+                                id: f.id,
+                                name: f.name
+                            })
+                            setShowEditFieldModal(true)
+                        }}
+                    >
+                    </Button>
+                    <Button
+                        icon={<IconDelete/>}
+                        onClick={() => {
+                            deleteField(f.id)
+                        }} type={'danger'}/>
+
+                </Space>
+
+            </Col>
+        </Row>
+
+    </>
+}
+
+function ModifyView({currentView, currentTable}) {
+    const {t} = useTranslation();
+    const [fields, setFields] = useState([])
+    const [filterFields, setFilterFields] = useState([])
+    const [selectedFields, setSelectedFields] = useState([])
+    const [fieldTypes, setFieldTypes] = useState([])
+    const [viewName, setViewName] = useState("")
+
+    // 编辑字段名称
+    const [showEditFieldModal, setShowEditFieldModal] = useState(false)
+    const [editFieldInfo, setEditFiledInfo] = useState({})
+
+    async function editField(fieldId, newName) {
+        console.log("编辑字段名称", newName, fieldId)
+        await currentTable.setField(fieldId, {
+            name: newName
+        })
+        Toast.success(t('toast.editSuccess'))
+        setShowEditFieldModal(false)
+        getFields()
+    }
+
+    useEffect(() => {
+        getFields()
+    }, [currentView])
+
+
+    async function getFields() {
+        console.log("getFields")
+        let fields = await currentView.getFieldMetaList()
+        let visible = await currentView.getVisibleFieldIdList()
+        let types = []
+        fields = fields.map(f => {
+            f.visable = visible.indexOf(f.id) > -1
+            if (!types.some(t => t.value === f.type)) {
+                types.push({
+                    label: t(`field.type.${f.type}`),
+                    value: f.type
+                })
+            }
+            return f
+        })
+        setFieldTypes(types)
+        setFields(fields)
+        setFilterFields(fields)
+        let viewName = await currentView.getName()
+        setViewName(viewName)
+        if (selectedFields.length > 0) {
+            let newSelectedFields = selectedFields.filter(id => {
+                return fields.some(f => f.id === id)
+            })
+            setSelectedFields(newSelectedFields)
+        }
+    }
+
+    async function batchShowFields() {
+        let ids = selectedFields
+        if (ids.length === 0) {
+            return
+        }
+        let fieldNames = ids.map(id => {
+            return fields.find(f => f.id === id).name
+        })
+
+        Modal.info({
+            width: 300,
+            title: t('modal.batchShowFieldTitle'),
+            content: <div>
+                <Space wrap>{
+                    fieldNames.map(name => {
+                        return <Tag style={{maxWidth: "120px"}}>{name}</Tag>
+                    })
+                }</Space>
+            </div>,
+            async onOk() {
+                for (let id of ids) {
+                    await currentView.showField(id)
+                }
+                getFields()
+            },
+        })
+
+    }
+
+    async function batchHideFields(id: string) {
+        let ids = selectedFields
+        if (ids.length === 0) {
+            return
+        }
+
+        let fieldNames = ids.map(id => {
+            return fields.find(f => f.id === id).name
+        })
+        Modal.info({
+            width: 300,
+            title: t('modal.batchHideFieldTitle'),
+            content: <div>
+                <Space wrap>{
+                    fieldNames.map(name => {
+                        return <Tag style={{maxWidth: "120px"}}>{name}</Tag>
+                    })
+                }</Space>
+            </div>,
+            async onOk() {
+                for (let id of ids) {
+                    await currentView.hideField(id)
+                }
+                getFields()
+            },
+        })
+
+    }
+
+    async function batchDeleteFields() {
+        let ids = selectedFields
+        if (ids.length === 0) {
+            return
+        }
+        let fieldNames = ids.map(id => {
+            return fields.find(f => f.id === id).name
+        })
+        Modal.confirm({
+            width: 300,
+            title: t('modal.batchDeleteFieldTitle'),
+            content: <div>
+                <Space wrap>{
+                    fieldNames.map(name => {
+                        return <Tag style={{maxWidth: "120px"}}>{name}</Tag>
+                    })
+                }</Space>
+            </div>,
+            async onOk() {
+                for (let id of ids) {
+                    try {
+                        await currentTable.deleteField(id)
+                    }catch (e) {
+                        let name = fields.find(f => f.id === id).name
+                        Toast.error(t('toast.deleteFieldError')  + ":" + name)
+                    }
+                }
+                getFields()
+            },
+        })
+    }
+
+    async function batchWidthFields(id: string) {
+
+    }
+
+
+    return <>
+        <EditField showEditFieldModal={showEditFieldModal} setShowEditFieldModal={setShowEditFieldModal}
+                   editFieldInfo={editFieldInfo} editField={editField}/>
         <Card title={viewName} bodyStyle={{
             padding: "10px 12px"
         }}>
@@ -246,9 +408,9 @@ function ModifyView({currentView, currentTable}) {
                 position: "absolute",
                 right: "10px",
                 top: "10px"
-            }} onClick={()=>{
+            }} onClick={() => {
                 getFields()
-            }} icon={<IconRefresh />}></Button>
+            }} icon={<IconRefresh/>}></Button>
             <Select
                 multiple
                 prefix={<IconFilter/>}
@@ -263,7 +425,7 @@ function ModifyView({currentView, currentTable}) {
                     })
                     setFilterFields(newFields)
                 }} style={{maxWidth: "400px", marginBottom: "3px"}} optionList={fieldTypes}
-                ></Select>
+            ></Select>
 
             <Input
                 style={{
@@ -282,7 +444,6 @@ function ModifyView({currentView, currentTable}) {
                 }}></Input>
 
 
-
             <CheckboxGroup value={selectedFields}
                            style={{
                                rowGap: "0px",
@@ -295,60 +456,19 @@ function ModifyView({currentView, currentTable}) {
 
                 {
                     filterFields.map(f => {
-                        return <Row style={{
-                            background: "#f5f5f5",
-                            padding: "6px 10px",
-                            display: "flex",
-                            alignItems: "center",
-                            margin: "3px 0",
-                            borderRadius: "4px",
-                            maxWidth: "400px",
-                        }}>
-                            <Col span={15}>
-                                <Checkbox style={{flex: 1,}} key={f.id} value={f.id}>
-                                <span style={{
-                                    color: f.visable ? "black" : "gray"
-                                }}>{f.name}</span>
-                                </Checkbox>
-                            </Col>
-                            <Col span={9} style={{
-                                textAlign: "right"
-                            }}>
-                                <Space>
-                                    {
-                                        f.visable ?
-                                            <Button onClick={() => {
-                                                hideField(f.id)
-                                            }} icon={<IconEyeOpened/>}
-                                            /> :
-                                            <Button onClick={() => {
-                                                showField(f.id)
-                                            }} icon={
-                                                <IconEyeClosed/>
-                                            }/>
-                                    }
-                                    <Button
-                                        icon={<IconEdit/>}
-                                        onClick={() => {
-                                            console.log("编辑字段名称", f)
-                                            setEditFiledInfo({
-                                                id: f.id,
-                                                name: f.name
-                                            })
-                                            setShowEditFieldModal(true)
-                                        }}
-                                    >
-                                    </Button>
-                                    <Button
-                                        icon={<IconDelete/>}
-                                        onClick={() => {
-                                            deleteField(f.id)
-                                        }} type={'danger'}/>
-
-                                </Space>
-
-                            </Col>
-                        </Row>
+                        return (<FieldItem key={f.id}
+                                           f={f}
+                                           currentTable={currentTable}
+                                           currentView={currentView}
+                                           fields={fields}
+                                           setFields={setFields}
+                                           filterFields={filterFields}
+                                           setFilterFields={setFilterFields}
+                                           setSelectedFields={setSelectedFields}
+                                           selectedFields={selectedFields}
+                                           setShowEditFieldModal={setShowEditFieldModal}
+                                           setEditFiledInfo={setEditFiledInfo}
+                        />)
                     })
                 }
             </CheckboxGroup>
@@ -365,7 +485,6 @@ function ModifyView({currentView, currentTable}) {
 
                 }}
             >
-
                 <Checkbox onChange={(e) => {
                     if (e.target.checked) {
                         setSelectedFields(filterFields.map(f => f.id))
@@ -378,103 +497,31 @@ function ModifyView({currentView, currentTable}) {
                         <Button
                             icon={<IconEyeOpened/>}
                             onClick={() => {
-                                let ids = selectedFields
-                                if (ids.length === 0) {
-                                    return
-                                }
-                                let fieldNames = ids.map(id => {
-                                    return fields.find(f => f.id === id).name
-                                })
-
-                                Modal.info({
-                                    width:300,
-                                    title: t('modal.batchShowFieldTitle'),
-                                    content: <div>
-                                        <Space wrap>{
-                                            fieldNames.map(name=>{
-                                                return <Tag style={{maxWidth:"120px"}}>{name}</Tag>
-                                            })
-                                        }</Space>
-                                    </div>,
-                                    onOk() {
-                                        ids.forEach(id => {
-                                            showField(id)
-                                        })
-                                    },
-                                })
+                                batchShowFields()
                             }}>显示</Button>
                         <Button
                             icon={<IconEyeClosed/>}
                             onClick={() => {
-                                let ids = selectedFields
-                                if (ids.length === 0) {
-                                    return
-                                }
-
-                                let fieldNames = ids.map(id => {
-                                    return fields.find(f => f.id === id).name
-                                })
-                                Modal.info({
-                                    width:300,
-                                    title: t('modal.batchHideFieldTitle'),
-                                    content: <div>
-                                        <Space wrap>{
-                                            fieldNames.map(name=>{
-                                                return <Tag style={{maxWidth:"120px"}}>{name}</Tag>
-                                            })
-                                        }</Space>
-                                    </div>,
-                                    onOk() {
-                                        ids.forEach(id => {
-                                            hideField(id)
-                                        })
-                                    },
-                                })
+                                batchHideFields()
                             }}>隐藏</Button>
 
                         <Button
                             icon={<IconDelete/>}
                             type={'danger'}
                             onClick={() => {
+                                batchDeleteFields()
+                            }}>删除</Button>
+                        <Button
+                            icon={<IconMarginLeftStroked/>}
+                            onClick={() => {
                                 let ids = selectedFields
                                 if (ids.length === 0) {
                                     return
                                 }
-                                console.log("ids", ids)
-                                console.log("fields", fields)
-                                let fieldNames = ids.map(id => {
-                                    return fields.find(f => f.id === id).name
+                                ids.forEach(id => {
+                                    showField(id)
                                 })
-                                Modal.confirm({
-                                    width:300,
-                                    title: t('modal.batchDeleteFieldTitle'),
-                                    content: <div>
-                                        <Space wrap>{
-                                            fieldNames.map(name=>{
-                                                return <Tag style={{maxWidth:"120px"}}>{name}</Tag>
-                                            })
-                                        }</Space>
-                                    </div>,
-                                    async onOk() {
-                                        for (let id of ids) {
-                                            await deleteField(id)
-                                        }
-                                        getFields()
-                                    },
-                                })
-
-                        }}>删除</Button>
-                        <Button
-                            icon={<IconMarginLeftStroked />}
-                            onClick={() => {
-                            let ids = selectedFields
-                            if (ids.length === 0) {
-                                return
-                            }
-                            ids.forEach(id => {
-                                showField(id)
-                            })
-                        }}>宽度自适应</Button>
+                            }}>宽度自适应</Button>
 
                     </ButtonGroup>
                 </div>
@@ -547,7 +594,7 @@ export default function App() {
     }
 
     if (currentViewType && currentViewType === ViewType.Grid) {
-        return <ModifyView currentView={currentView} currentTable={currentTable} />
+        return <ModifyView currentView={currentView} currentTable={currentTable}/>
     } else {
         return (
             <main className="container">
