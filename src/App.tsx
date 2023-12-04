@@ -13,7 +13,7 @@ import {
     CheckboxGroup,
     Toast,
     Select,
-    Modal, ButtonGroup, Tag
+    Modal, ButtonGroup, Tag, Popconfirm, Banner
 } from "@douyinfe/semi-ui";
 import {Typography} from '@douyinfe/semi-ui';
 import {useTranslation} from "react-i18next";
@@ -77,7 +77,6 @@ function BeautyView({currentView, currentTable}) {
         await (currentView as IGridView).setFieldWidth(fieldId, width.toString());
         await (currentView as IGridView).setFieldWidth(fieldId, width);
     }
-
     return (<Space vertical={true}>
             <Button onClick={() => beautify("content")} theme="solid" className="button" loading={loading}>
                 {t('button.beautifyByContent')}
@@ -164,28 +163,42 @@ function FieldItem({f, currentTable, currentView, fields, setFields, filterField
     }
 
     async function deleteField(id) {
-        try {
-            if (await currentTable.deleteField(id)) {
-                let newFields = fields.filter(f => {
-                    return f.id !== id
-                })
-                let newFilterFields = filterFields.filter(f => {
-                    return f.id !== id
-                })
-                setFields(newFields)
-                setFilterFields(newFilterFields)
-                if (selectedFields.indexOf(id) > -1) {
-                    let newSelectedFields = selectedFields.filter(f => {
-                        return f !== id
-                    })
-                    setSelectedFields(newSelectedFields)
+        Modal.confirm({
+            width: 300,
+            title: t('modal.deleteFieldTitle'),
+            content: <div>
+                <Space wrap>{
+                    <Tag style={{maxWidth: "120px"}}>{f.name}</Tag>
+                }</Space>
+            </div>,
+            async onOk() {
+
+                try {
+                    if (await currentTable.deleteField(id)) {
+                        let newFields = fields.filter(f => {
+                            return f.id !== id
+                        })
+                        let newFilterFields = filterFields.filter(f => {
+                            return f.id !== id
+                        })
+                        setFields(newFields)
+                        setFilterFields(newFilterFields)
+                        if (selectedFields.indexOf(id) > -1) {
+                            let newSelectedFields = selectedFields.filter(f => {
+                                return f !== id
+                            })
+                            setSelectedFields(newSelectedFields)
+                        }
+                    } else {
+                        Toast.error(t('toast.deleteFieldError'))
+                    }
+                } catch (e) {
+                    Toast.error(t('toast.deleteFieldError'))
                 }
-            } else {
-                Toast.error(t('toast.deleteFieldError'))
-            }
-        } catch (e) {
-            Toast.error(t('toast.deleteFieldError'))
-        }
+
+            },
+        })
+
     }
 
 
@@ -393,16 +406,23 @@ function ModifyView({currentView, currentTable}) {
         })
     }
 
-    async function batchWidthFields(id: string) {
-
-    }
 
 
     return <>
         <EditField showEditFieldModal={showEditFieldModal} setShowEditFieldModal={setShowEditFieldModal}
                    editFieldInfo={editFieldInfo} editField={editField}/>
-        <Card title={viewName} bodyStyle={{
-            padding: "10px 12px"
+        <div style={{fontWeight:500,textAlign:"center",background:"#eee",padding:"10px",maxWidth:"400px"}}>{t('currentView')}: {viewName}</div>
+
+        <Card title={t('beautyView')} bodyStyle={{
+            padding: "10px 12px",
+            position: "relative"
+        }}>
+            <BeautyView currentView={currentView} currentTable={currentTable}/>
+        </Card>
+
+        <Card title={t('filedManager')} bodyStyle={{
+            padding: "10px 12px",
+            position: "relative"
         }}>
             <Button style={{
                 position: "absolute",
@@ -498,31 +518,19 @@ function ModifyView({currentView, currentTable}) {
                             icon={<IconEyeOpened/>}
                             onClick={() => {
                                 batchShowFields()
-                            }}>显示</Button>
+                            }}>{t('button.show')}</Button>
                         <Button
                             icon={<IconEyeClosed/>}
                             onClick={() => {
                                 batchHideFields()
-                            }}>隐藏</Button>
+                            }}>{t('button.hide')}</Button>
 
                         <Button
                             icon={<IconDelete/>}
                             type={'danger'}
                             onClick={() => {
                                 batchDeleteFields()
-                            }}>删除</Button>
-                        <Button
-                            icon={<IconMarginLeftStroked/>}
-                            onClick={() => {
-                                let ids = selectedFields
-                                if (ids.length === 0) {
-                                    return
-                                }
-                                ids.forEach(id => {
-                                    showField(id)
-                                })
-                            }}>宽度自适应</Button>
-
+                            }}>{t('button.delete')}</Button>
                     </ButtonGroup>
                 </div>
             </div>

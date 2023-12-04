@@ -74,6 +74,14 @@ const config = [
     ["modal.batchHideFieldTitle", "以下字段将被隐藏", "The following fields will be hidden"],
     ['modal.batchDeleteFieldTitle', "以下字段将被删除", "The following fields will be deleted"],
     ["toast.deleteFieldError", "删除失败", "fail"],
+    ["button.show", "显示", "Show"],
+    ["button.hide", "隐藏", "Hide"],
+    ["button.delete", "删除", "Delete"],
+    ["button.fitWidth", "自适应宽度", "Fit Width"],
+    ['modal.deleteFieldTitle', "确认删除字段？", "Confirm to delete the field?"],
+    ['beautyView', "一键美化视图", "Beautify View"],
+    ['filedManager', "字段管理", "Field Management"],
+    ['currentView', "当前视图", "Current View"],
 ]
 
 
