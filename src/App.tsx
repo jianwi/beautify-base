@@ -345,7 +345,7 @@ function ModifyView({currentView, currentTable}) {
 
     }
 
-    async function batchHideFields(id: string) {
+    async function batchHideFields() {
         let ids = selectedFields
         if (ids.length === 0) {
             return
